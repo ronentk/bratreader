@@ -106,6 +106,19 @@ def _find_t(e, annotations):
     return keys
 
 
+def _find_target_types(e):
+    """
+    Given an "E" annotation from an .ann file, find the target values (types).
+    """
+    e = e.split()
+
+    if len(e) > 1:
+        targetvals = [y for y in [x.split(":")[0] for x in e[1:]]]
+    else:
+        targetvals = []
+
+    return targetvals
+
 def _evaluate_annotations(annotations):
     """
     Evaluate all annotations for an .ann file.
@@ -166,25 +179,34 @@ def _evaluate_annotations(annotations):
 
         # function returns the id of T.
         targetkeys = _find_t(e, annotations)
+        # This is an addition to the original version, for cases where we want the
+        # target types and not the origin type
+        targetvals = _find_target_types(e)
         origintype, originkey = e.split()[0].split(":")
         originkey = originkey[1:]
 
         targets = [x[1:] for x in targetkeys]
 
-        for x in targets:
+        for i,x in enumerate(targets):
+            # take dest type instead of origin type
+            targettype = targetvals[i]
             t = annotationobjects[originkey]
-            annotationobjects[x].links[origintype].append(t)
+            annotationobjects[x].links[targettype].append(t)
 
     # "R" annotations
     for r in annotations["R"].values():
 
+        # needed here as well since relation may reference E tags
+        targetkeys = _find_t(r, annotations)
         r = r.split()
+
 
         if len(r) > 1:
 
             origintype = r[0]
-            originkey = r[1].split(":")[1][1:]
-            targets = [y for y in [x.split(":")[1][1:] for x in r[2:]]]
+            originkey = targetkeys[0][1:]
+            targets = [x[1:] for x in targetkeys[1:]]
+
 
             for x in targets:
                 t = annotationobjects[originkey]
